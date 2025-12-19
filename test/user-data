@@ -2,8 +2,13 @@
 package_update: true
 packages:
   - curl
+  - iproute2
+  - iputils-ping
 
 runcmd:
-  - echo "cloud-init ran successfully" | tee /dev/console
+  - sh -c 'echo "=== cloud-init start ===" | tee /dev/console'
+  - sh -c 'ip a | tee /dev/console'
+  - sh -c 'echo "=== ping google.com ===" | tee /dev/console'
+  - sh -c 'ping -c 4 google.com | tee /dev/console'
+  - sh -c 'echo "=== cloud-init done, powering off ===" | tee /dev/console'
   - poweroff
-

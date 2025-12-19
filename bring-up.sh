@@ -18,6 +18,14 @@ fi
 
 . "$CONF_FILE"
 
+: "${IMAGE:?missing IMAGE in image-info.conf}"
+: "${VM_MEMORY:?missing VM_MEMORY in image-info.conf}"
+: "${VM_VCPUS:?missing VM_VCPUS in image-info.conf}"
+
+VM_OS_VARIANT="${VM_OS_VARIANT:-debian13}"
+VM_NET_MODE="${VM_NET_MODE:-libvirt}"
+VM_NETWORK="${VM_NETWORK:-default}"
+
 BASE_DIR="$SCRIPT_DIR"
 BUILD_SCRIPT="$BASE_DIR/build.sh"
 
@@ -30,7 +38,7 @@ RUN_IMAGE="$RUN_DIR/${NAME}-run.qcow2"
 CI_ISO="$CI_DIR/${NAME}.iso"
 
 if [ ! -x "$BUILD_SCRIPT" ]; then
-  echo "error: build.sh not found or not executable at $BUILD_SCRIPT" >&2
+  echo "error: build.sh not executable: $BUILD_SCRIPT" >&2
   exit 1
 fi
 
@@ -56,18 +64,45 @@ sudo qemu-img create \
   "$RUN_IMAGE" \
   >/dev/null
 
+NET_ARGS=()
+
+case "$VM_NET_MODE" in
+  libvirt)
+    NET_ARGS+=(
+      --network "network=${VM_NETWORK},model=virtio"
+    )
+    ;;
+  macvtap)
+    : "${VM_NET_IFACE:?missing VM_NET_IFACE for macvtap}"
+    NET_ARGS+=(
+      --network "type=direct,source=${VM_NET_IFACE},source_mode=bridge,model=virtio"
+    )
+    ;;
+  dual)
+    : "${VM_NET_IFACE:?missing VM_NET_IFACE for dual mode}"
+    NET_ARGS+=(
+      --network "type=direct,source=${VM_NET_IFACE},source_mode=bridge,model=virtio"
+      --network "network=${VM_NETWORK},model=virtio"
+    )
+    ;;
+  *)
+    echo "error: unknown VM_NET_MODE=$VM_NET_MODE" >&2
+    exit 1
+    ;;
+esac
+
 sudo virt-install \
   --name "$NAME" \
-  --memory 2048 \
-  --vcpus 2 \
+  --memory "$VM_MEMORY" \
+  --vcpus "$VM_VCPUS" \
   --import \
   --disk path="$RUN_IMAGE",format=qcow2,bus=virtio \
   --disk path="$CI_ISO",format=raw,device=cdrom \
-  --os-variant debian13 \
-  --network network=default,model=virtio \
+  --os-variant "$VM_OS_VARIANT" \
   --graphics none \
   --boot uefi \
-  --noautoconsole
+  --noautoconsole \
+  "${NET_ARGS[@]}"
 
 sudo virsh console "$NAME"
 
