@@ -7,8 +7,18 @@ if [ $# -ne 1 ]; then
 fi
 
 NAME="$1"
-BASE_DIR="$HOME/cloud-init"
-SRC_DIR="$BASE_DIR/$NAME"
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+CONF_FILE="$SCRIPT_DIR/image-info.conf"
+
+if [ ! -f "$CONF_FILE" ]; then
+  echo "error: missing $CONF_FILE" >&2
+  exit 1
+fi
+
+. "$CONF_FILE"
+
+SRC_DIR="$SCRIPT_DIR/$NAME"
 OUT_DIR="/var/lib/libvirt/cloud-init"
 OUT_ISO="$OUT_DIR/$NAME.iso"
 
@@ -32,3 +42,4 @@ sudo xorriso -as mkisofs \
   "$SRC_DIR/meta-data"
 
 echo "built: $OUT_ISO"
+

@@ -8,12 +8,26 @@ fi
 
 NAME="$1"
 
-BASE_DIR="$HOME/cloud-init"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+CONF_FILE="$SCRIPT_DIR/image-info.conf"
+
+if [ ! -f "$CONF_FILE" ]; then
+  echo "error: missing $CONF_FILE" >&2
+  exit 1
+fi
+
+. "$CONF_FILE"
+
+BASE_DIR="$SCRIPT_DIR"
 BUILD_SCRIPT="$BASE_DIR/build.sh"
 
-RO_IMAGE="/var/lib/libvirt/ro-images/debian-13-genericcloud-amd64.qcow2"
-RUN_IMAGE="/var/lib/libvirt/images/${NAME}-run.qcow2"
-CI_ISO="/var/lib/libvirt/cloud-init/${NAME}.iso"
+RO_DIR="/var/lib/libvirt/ro-images"
+RUN_DIR="/var/lib/libvirt/images"
+CI_DIR="/var/lib/libvirt/cloud-init"
+
+RO_IMAGE="$RO_DIR/$IMAGE"
+RUN_IMAGE="$RUN_DIR/${NAME}-run.qcow2"
+CI_ISO="$CI_DIR/${NAME}.iso"
 
 if [ ! -x "$BUILD_SCRIPT" ]; then
   echo "error: build.sh not found or not executable at $BUILD_SCRIPT" >&2
@@ -25,20 +39,16 @@ if [ ! -f "$RO_IMAGE" ]; then
   exit 1
 fi
 
-# Build cloud-init ISO
 "$BUILD_SCRIPT" "$NAME"
 
-# Remove existing VM if present
 if sudo virsh dominfo "$NAME" >/dev/null 2>&1; then
   echo "existing VM '$NAME' found, removing"
   sudo virsh destroy "$NAME" >/dev/null 2>&1 || true
   sudo virsh undefine "$NAME" --nvram >/dev/null 2>&1 || true
 fi
 
-# Remove any previous run disk
 sudo rm -f "$RUN_IMAGE"
 
-# Create qcow2 overlay backed by the RO base image
 sudo qemu-img create \
   -f qcow2 \
   -F qcow2 \
@@ -46,7 +56,6 @@ sudo qemu-img create \
   "$RUN_IMAGE" \
   >/dev/null
 
-# Define and start VM using UEFI firmware
 sudo virt-install \
   --name "$NAME" \
   --memory 2048 \
@@ -60,6 +69,5 @@ sudo virt-install \
   --boot uefi \
   --noautoconsole
 
-# Attach to serial console
 sudo virsh console "$NAME"
 

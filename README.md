@@ -37,17 +37,22 @@ Each run starts from a clean environment.
 
 ```
 .
-├── bring-down.sh        # Tear down VM and clean up artifacts
+├── image-info.conf      # Base image configuration (single source of truth)
+├── update.sh            # Update base cloud image
 ├── bring-up.sh          # Build cloud-init, create overlay, boot VM
+├── bring-down.sh        # Tear down VM and clean up artifacts
 ├── build.sh             # Build cloud-init ISO from a directory
-├── update.sh            # Update base cloud images (optional automation)
 ├── LICENSE.md
 ├── README.md
-└── test/
-    ├── cloud-init.iso   # Example generated ISO (not source)
-    ├── meta-data        # cloud-init meta-data
-    └── user-data        # cloud-init user-data
+├── vm1/
+│   ├── user-data
+│   └── meta-data
+└── vm2/
+    ├── user-data
+    └── meta-data
 ```
+
+All scripts resolve paths **relative to their own location**, not `$HOME`. This makes execution predictable under sudo, cron, or automation.
 
 ---
 
@@ -63,21 +68,48 @@ The host must have hardware virtualization enabled.
 
 ---
 
-## Base Image
+## Base Image Configuration
 
-The harness expects a Debian cloud image at:
+Base image details are defined in `image-info.conf`:
+
+```sh
+BASE_URL="https://cloud.debian.org/images/cloud/trixie/latest"
+IMAGE="debian-13-genericcloud-amd64.qcow2"
+```
+
+The resolved base image path is:
 
 ```
-/var/lib/libvirt/ro-images/debian-13-genericcloud-amd64.qcow2
+/var/lib/libvirt/ro-images/<IMAGE>
 ```
 
-This image is treated as **read-only**. Per-run VMs use qcow2 overlays backed by this image.
+This image is treated as **read-only**. Per-run VMs use qcow2 overlays backed by it.
 
-Updating the base image requires deleting any existing overlays created from the old version.
+After updating the base image, all existing overlays created from the previous version must be deleted.
 
 ---
 
 ## Scripts
+
+### `update.sh`
+
+Optional helper to fetch and update the base cloud image.
+
+Responsibilities:
+
+* Fetch `SHA512SUMS` from the configured `BASE_URL`
+* Compare against the locally stored checksum
+* Download the qcow2 image only when it has changed
+
+Usage:
+
+```bash
+./update.sh
+```
+
+This script owns **base image lifecycle only** and does not interact with VMs.
+
+---
 
 ### `build.sh`
 
@@ -115,7 +147,7 @@ Steps performed:
 
 1. Builds the cloud-init ISO using `build.sh`
 2. Destroys and undefines any existing VM with the same name
-3. Creates a qcow2 overlay backed by the base image
+3. Creates a qcow2 overlay backed by the configured base image
 4. Boots the VM using `virt-install`
 5. Attaches to the serial console
 
@@ -125,7 +157,7 @@ Usage:
 ./bring-up.sh <name>
 ```
 
-UEFI is explicitly enabled to match virt-manager behavior and to avoid BIOS-related boot failures.
+UEFI is explicitly enabled to match virt-manager behavior and avoid BIOS-related boot failures.
 
 ---
 
@@ -150,20 +182,6 @@ This leaves the system in a clean state.
 
 ---
 
-### `update.sh`
-
-Optional helper script to update the base cloud image.
-
-A typical implementation:
-
-* Fetch the latest SHA512SUMS from Debian
-* Compare against a locally stored checksum
-* Download the new qcow2 image only if it has changed
-
-After updating the base image, all existing overlays must be deleted.
-
----
-
 ## cloud-init Usage
 
 cloud-init is used in **NoCloud** mode via an attached ISO.
@@ -177,7 +195,7 @@ cloud-init runs once on first boot. The VM can be configured to power off automa
 
 ## Notes and Pitfalls
 
-* **UEFI is mandatory** for modern Debian cloud images when using virt-install
+* **UEFI is mandatory** for modern Debian cloud images when using `virt-install`
 * qcow2 overlays must not outlive their backing image
 * Serial console output may be minimal unless kernel parameters are adjusted
 * This harness intentionally avoids persistent state
@@ -199,3 +217,4 @@ If something breaks, the solution is usually to delete it and start again.
 ## License
 
 See `LICENSE.md`.
+
