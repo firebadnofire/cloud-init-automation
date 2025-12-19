@@ -81,22 +81,36 @@ The host must have hardware virtualization enabled.
 
 ## Base Image Configuration
 
-Base image details are defined in `image-info.conf`:
+Base image and VM defaults are defined in `image-info.conf`:
 
 ```sh
 BASE_URL="https://cloud.debian.org/images/cloud/trixie/latest"
 IMAGE="debian-13-genericcloud-amd64.qcow2"
+
+VM_MEMORY=2048
+VM_VCPUS=2
+VM_OS_VARIANT="debian13"
+
+# default NAT config
+VM_NET_MODE="libvirt"
+VM_NETWORK="default"
+
+# macvtap config
+#VM_NET_MODE="macvtap"
+#VM_NET_IFACE="eno1"
+
+# dual NIC config
+#VM_NET_MODE="dual"
+#VM_NET_IFACE="eno1"
+#VM_NETWORK="default"
 ```
 
-The resolved base image path is:
+Key points:
 
-```
-/var/lib/libvirt/ro-images/<IMAGE>
-```
-
-This image is treated as **read-only**. Per-run VMs use qcow2 overlays backed by it.
-
-After updating the base image, all existing overlays created from the previous version must be deleted.
+* The resolved base image path is `/var/lib/libvirt/ro-images/<IMAGE>` and is treated as **read-only**. Per-run VMs use qcow2 overlays backed by it.
+* `VM_MEMORY`, `VM_VCPUS`, and `VM_OS_VARIANT` control the default hardware profile for new VMs.
+* `VM_NET_MODE` selects between `libvirt` (NAT), `macvtap` (bridged), or `dual` (one of each). `VM_NET_IFACE` is required for the bridged interface, and `VM_NETWORK` chooses the libvirt network when applicable.
+* After updating the base image, all existing overlays created from the previous version must be deleted.
 
 ---
 
