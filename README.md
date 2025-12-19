@@ -20,6 +20,17 @@ The workflow intentionally resembles Docker, but uses full virtual machines inst
 
 ---
 
+## Tested host systems
+
+#### (using included `test` directory, using the Debian's generic cloud images)
+
+* OpenSUSE Tumbleweed Linux ✅
+* Asahi Fedora Linux ✅
+
+It is recommended to use the included `test` directory to ensure the system works as intended. If it works, the VM will shut itself down after pulling `curl` from the package manager.
+
+---
+
 ## High-Level Workflow
 
 1. Maintain a **read-only base qcow2 image**
@@ -216,5 +227,5 @@ If something breaks, the solution is usually to delete it and start again.
 
 ## License
 
-See `LICENSE.md`.
+See [LICENSE.md](https://pubcode.archuser.org/firebadnofire/cloud-init-automation/raw/branch/main/LICENSE.md).
 
