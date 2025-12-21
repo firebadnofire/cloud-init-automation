@@ -11,9 +11,20 @@ fi
 
 . "$CONF_FILE"
 
+: "${CHECKSUM_PATH:?missing CHECKSUM_PATH}"
+: "${CHECKSUM_TYPE:?missing CHECKSUM_TYPE}"
+
+case "$CHECKSUM_TYPE" in
+  256|512) ;;
+  *)
+    echo "error: unsupported CHECKSUM_TYPE $CHECKSUM_TYPE (use 256 or 512)" >&2
+    exit 1
+    ;;
+esac
+
 RO_DIR="/var/lib/libvirt/ro-images"
 LOCAL_IMG="$RO_DIR/$IMAGE"
-LOCAL_SUM="$RO_DIR/$IMAGE.sha512"
+LOCAL_SUM="$RO_DIR/$IMAGE.sha${CHECKSUM_TYPE}"
 
 TMP_SUM="$(mktemp)"
 cleanup() {
@@ -21,14 +32,16 @@ cleanup() {
 }
 trap cleanup EXIT
 
-curl -fsSL "$BASE_URL/SHA512SUMS" -o "$TMP_SUM"
+curl -fsSL "$BASE_URL/$CHECKSUM_PATH" -o "$TMP_SUM"
 
 REMOTE_HASH="$(
-  awk -v img="$IMAGE" '$2 == img { print $1 }' "$TMP_SUM"
+  awk -v img="$IMAGE" '
+    ($2 == img || $NF == img) { print $1 }
+  ' "$TMP_SUM"
 )"
 
 if [ -z "$REMOTE_HASH" ]; then
-  echo "error: hash for $IMAGE not found in SHA512SUMS" >&2
+  echo "error: hash for $IMAGE not found in checksum file" >&2
   exit 1
 fi
 
