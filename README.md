@@ -239,6 +239,27 @@ If something breaks, the solution is usually to delete it and start again.
 
 ---
 
+## Apt & HTTP caching
+
+Because this harness relies on disposable VMs, the same packages and metadata are downloaded repeatedly across test runs. This is wasteful and quickly becomes a bottleneck, even on fast connections.
+
+For this reason, using a local caching proxy is strongly recommended. While a generic HTTP proxy like Squid can work, a purpose-built package cache such as apt-cacher-ng is a significantly better fit for this workflow. It transparently caches `.deb` files and apt metadata and requires no changes inside the guest beyond standard proxy configuration.
+
+In practice, apt-cacher-ng dramatically reduces network usage and speeds up repeated test runs when using this harness.
+
+<details>
+<summary>See the difference (apt-cacher-ng in use)</summary>
+
+The following screenshot shows apt-cacher-ng statistics after repeated runs of this harness,
+illustrating the reduction in external network traffic once a cache is in place.
+
+![apt-cacher-ng cache efficiency](cache.png)
+
+</details>
+
+
+---
+
 ## License
 
 See [LICENSE.md](https://pubcode.archuser.org/firebadnofire/cloud-init-automation/raw/branch/main/LICENSE.md).
