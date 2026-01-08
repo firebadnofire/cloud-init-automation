@@ -268,11 +268,12 @@ illustrating the reduction in external network traffic once a cache is in place.
 
 </details>
 
-If you use Docker, it can be pulled in with this compose file:
+If you use Docker, you can deploy it with the following Compose file:
 
 <details>
-<summary>Docker configuration info</summary>
-```
+<summary>Docker configuration</summary>
+
+```yaml
 services:
   apt-cacher-ng:
     image: sameersbn/apt-cacher-ng
@@ -286,9 +287,10 @@ services:
 volumes:
   apt-cacher-ng:
 ```
+
 </details>
 
-This will make it avalivble via the VM host's IP, which is typically `192.168.122.1` with Libvirt. See `test-cached` for example usage thereafter.
+This exposes the service on the Docker host’s IP address. When running under libvirt’s default NAT network, this is typically `192.168.122.1`. See `test-cached` for an example of how to consume the cache.
 
 ---
 
