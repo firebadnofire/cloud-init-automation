@@ -229,6 +229,14 @@ cloud-init runs once on first boot. The VM can be configured to power off automa
 
 ---
 
+## Logging
+
+Included is a `copy-logs.sh` script. It's syntax is `./copy-logs.sh vm-name [/path/to/file]`. `/path/to/file` here is a path on the VM disk that leads to a particular file to copy. Otherwise, if no path is supplied then it will pull the cloud init logs. 
+
+NOTE: You MUST shutdown the VM prior to using the script. NOT bring down the VM with `bring-down.sh` as that will *delete* the qcow2 overlay that contains the logs. You may use `sudo virsh shutdown vm-name` to shutdown a VM from the command line. 
+
+---
+
 ## Notes and Pitfalls
 
 * **UEFI is mandatory** for modern Debian cloud images when using `virt-install`
@@ -290,6 +298,12 @@ volumes:
 </details>
 
 This exposes the service on the Docker host’s IP address. When running under libvirt’s default NAT network, this is typically `192.168.122.1`. See `test-cached` for an example of how to consume the cache.
+
+---
+
+## Proof of concept
+
+I have included my test scripts for [secure-dns-proxy](https://raw.githubusercontent.com/firebadnofire/secure-dns-proxy) in `sdp/` of the repo. These scripts use [my secure DNS servers](https://pubhole.archuser.org) but the files are all plaintext and under the same license so you may edit them as you wish.
 
 ---
 
