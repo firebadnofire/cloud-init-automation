@@ -34,12 +34,19 @@ fi
 
 sudo mkdir -p "$OUT_DIR"
 
-sudo xorriso -as mkisofs \
-  -output "$OUT_ISO" \
-  -volid cidata \
-  -joliet -rock \
-  "$SRC_DIR/user-data" \
+XORRISO_ARGS=(
+  -as mkisofs
+  -output "$OUT_ISO"
+  -volid cidata
+  -joliet -rock
+  "$SRC_DIR/user-data"
   "$SRC_DIR/meta-data"
+)
+
+if [ -d "$SRC_DIR/include" ]; then
+  XORRISO_ARGS+=("$SRC_DIR/include")
+fi
+
+sudo xorriso "${XORRISO_ARGS[@]}"
 
 echo "built: $OUT_ISO"
-

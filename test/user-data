@@ -1,27 +1,16 @@
 #cloud-config
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - curl
+  - bash
+  - ca-certificates
+  - gcc
+  - binutils
+  - pkg-config
+
 runcmd:
-  - sh -c 'echo "=== cloud-init start ===" | tee /dev/console'
-
-  # Network interface presence
-  - sh -c 'ip link show | tee /dev/console'
-
-  # Address assignment
-  - sh -c 'ip addr show | tee /dev/console'
-
-  # Default route
-  - sh -c 'ip route show default | tee /dev/console'
-
-  # DNS resolution without assuming resolvectl or dig
-  - sh -c 'getent hosts google.com | tee /dev/console'
-
-  # ICMP reachability
-  - sh -c 'ping -c 3 -w 5 google.com | tee /dev/console'
-
-  - lsblk
-
-  - sh -c 'echo "=== cloud-init done ===" | tee /dev/console'
-
-
-power_state:
-  mode: poweroff
-  condition: true
+  - mount --mkdir -o ro -L cidata /mnt/cidata
+  - /mnt/cidata/test.sh

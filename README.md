@@ -1,6 +1,6 @@
 # cloud-init VM Test Harness
 
-This repository provides a small, explicit VM-based test harness built on **libvirt**, **QEMU**, and **cloud-init**. It is designed for repeatable, disposable test environments without relying on virt-manager or any GUI tooling.
+This repository provides a small, explicit VM-based test harness built on **libvirt**, **QEMU**, and **cloud-init**. It is designed for repeatable, disposable test environments without requiring on virt-manager or any GUI tooling.
 
 The primary use case is testing system-level software in clean environments. The original motivation was a Go-based replacement for systemd-resolved implementing secure DNS transports (DoH, DoT, DoQ), but the tooling is generic.
 
@@ -16,8 +16,6 @@ The primary use case is testing system-level software in clean environments. The
 * Fast iteration
 * CLI-first workflow
 
-The workflow intentionally resembles Docker, but uses full virtual machines instead of containers.
-
 ---
 
 ## Tested host systems
@@ -27,7 +25,13 @@ The workflow intentionally resembles Docker, but uses full virtual machines inst
 * OpenSUSE Tumbleweed Linux ✅
 * Asahi Fedora Linux ✅
 
-It is recommended to use the included `test` directory to ensure the system works as intended. If it works, the VM will shut itself down after pulling `curl` from the package manager.
+It is recommended to use the included `test` directory to ensure the system works as intended. If it works, the VM will show "SUCCESS" somewhere in the logs with lines of `#` above and below it as such:
+
+```
+######################################################
+SUCCESS
+######################################################
+```
 
 ---
 
@@ -58,7 +62,12 @@ Each run starts from a clean environment.
 ├── vm1/
 │   ├── user-data
 │   └── meta-data
-└── vm2/
+├── vm2/
+│   ├── user-data
+│   ├── meta-data
+│   └── include/         # used to include files in the generated iso's root. May be mounted by label `cidata` via cloud-init for access.
+│       └── example.sh
+└── vm3/
     ├── user-data
     └── meta-data
 ```
@@ -214,6 +223,8 @@ cloud-init is used in **NoCloud** mode via an attached ISO.
 * `user-data` contains configuration, packages, scripts, or test logic
 * `meta-data` defines instance identity
 
+* Your VM directory may have a `include/` directory. It will put any files inside it in the root of the iso in order to allow the VM to access additional files. For example, you may use `include/test.sh` then `mount --mkdir -L cidata /mnt/cidata` followed by `/mnt/cidata/test.sh` to call it.
+
 cloud-init runs once on first boot. The VM can be configured to power off automatically after completing tests.
 
 ---
@@ -243,7 +254,7 @@ If something breaks, the solution is usually to delete it and start again.
 
 Because this harness relies on disposable VMs, the same packages and metadata are downloaded repeatedly across test runs. This is wasteful and quickly becomes a bottleneck, even on fast connections.
 
-For this reason, using a local caching proxy is strongly recommended. While a generic HTTP proxy like Squid can work, a purpose-built package cache such as apt-cacher-ng is a significantly better fit for this workflow. It transparently caches `.deb` files and apt metadata and requires no changes inside the guest beyond standard proxy configuration.
+For this reason, using a local caching proxy is strongly recommended. While a generic HTTP proxy like Squid can work, a purpose-built package cache such as apt-cacher-ng is a significantly better fit for this workflow. It transparently caches `.deb` files and apt metadata.
 
 In practice, apt-cacher-ng dramatically reduces network usage and speeds up repeated test runs when using this harness.
 
@@ -257,6 +268,27 @@ illustrating the reduction in external network traffic once a cache is in place.
 
 </details>
 
+If you use Docker, it can be pulled in with this compose file:
+
+<details>
+<summary>Docker configuration info</summary>
+```
+services:
+  apt-cacher-ng:
+    image: sameersbn/apt-cacher-ng
+    container_name: apt-cacher-ng
+    ports:
+      - "3142:3142"
+    volumes:
+      - apt-cacher-ng:/var/cache/apt-cacher-ng
+    restart: always
+
+volumes:
+  apt-cacher-ng:
+```
+</details>
+
+This will make it avalivble via the VM host's IP, which is typically `192.168.122.1` with Libvirt. See `test-cached` for example usage thereafter.
 
 ---
 
