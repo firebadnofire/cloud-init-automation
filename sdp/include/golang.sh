@@ -58,6 +58,7 @@ PROFILED_FILE="/etc/profile.d/go.sh"
 echo "Installing PATH integration at ${PROFILED_FILE}"
 sudo tee "$PROFILED_FILE" >/dev/null <<'EOF'
 export PATH="$PATH:/usr/local/go/bin"
+export GOPROXY=http://192.168.122.1:3000
 EOF
 
 sudo chmod 0644 "$PROFILED_FILE"

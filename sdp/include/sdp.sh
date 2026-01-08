@@ -4,7 +4,8 @@ echo "##############################################"
 echo "SDP SCRIPT HAS STARTED"
 
 # Ensure Go is activated
-PATH="/usr/local/go/bin:$PATH"
+export PATH="/usr/local/go/bin:$PATH"
+export GOPROXY=http://192.168.122.1:3000
 
 # Install SDP itself
 git clone https://github.com/firebadnofire/secure-dns-proxy.git /home/testuser/sdp
@@ -21,7 +22,7 @@ echo "##############################################"
 
 echo "##############################################"
 echo "HTTPS TESTS"
-mv /mnt/cidata/https.json /etc/secure-dns-proxy/config.json
+sudo cp /mnt/cidata/https.json /etc/secure-dns-proxy/config.json
 sudo systemctl restart secure-dns-proxy.service
 
 nslookup google.com 127.0.0.35
@@ -31,7 +32,7 @@ echo "##############################################"
 
 echo "##############################################"
 echo "DOT TESTS"
-mv /mnt/cidata/dot.json /etc/secure-dns-proxy/config.json
+sudo cp /mnt/cidata/tls.json /etc/secure-dns-proxy/config.json
 sudo systemctl restart secure-dns-proxy.service
 
 nslookup google.com 127.0.0.35
@@ -41,7 +42,7 @@ echo "##############################################"
 
 echo "##############################################"
 echo "DOQ TESTS"
-mv /mnt/cidata/doq.json /etc/secure-dns-proxy/config.json
+sudo cp /mnt/cidata/quic.json /etc/secure-dns-proxy/config.json
 sudo systemctl restart secure-dns-proxy.service
 
 nslookup google.com 127.0.0.35
