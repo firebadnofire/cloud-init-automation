@@ -8,6 +8,8 @@ write_files:
       Acquire::http::Proxy "http://192.168.122.1:3142";
       Acquire::https::Proxy "http://192.168.122.1:3142";
 
+  # Since Debian 13, APT has defaulted to HTTPS repositories. Since apt-cacher-ng is HTTP, we must use HTTP repositories. 
+  # This config is the same config as /usr/share/doc/apt/examples/debian.sources which still points to HTTP URLs
   - path: /etc/apt/sources.list.d/debian.sources
     owner: root:root
     permissions: '0644'
