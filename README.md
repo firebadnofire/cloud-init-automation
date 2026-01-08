@@ -233,7 +233,6 @@ cloud-init runs once on first boot. The VM can be configured to power off automa
 
 * **UEFI is mandatory** for modern Debian cloud images when using `virt-install`
 * qcow2 overlays must not outlive their backing image
-* Serial console output may be minimal unless kernel parameters are adjusted
 * This harness intentionally avoids persistent state
 
 ---
