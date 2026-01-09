@@ -65,9 +65,6 @@ packages:
   - curl
   - bash
   - ca-certificates
-  - gcc
-  - binutils
-  - pkg-config
   - git
   - make
   - bind9-dnsutils
