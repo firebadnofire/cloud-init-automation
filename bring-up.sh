@@ -47,6 +47,32 @@ if [ ! -f "$RO_IMAGE" ]; then
   exit 1
 fi
 
+# Deterministically derive the last 3 MAC bytes from a stable input string.
+# Prefix 52:54:00 keeps the address in the qemu/libvirt locally administered range.
+generate_mac() {
+  local seed="$1"
+  local hex
+
+  hex="$(printf '%s' "$seed" | sha256sum | awk '{print $1}')"
+
+  printf '52:54:00:%s:%s:%s\n' \
+    "${hex:0:2}" \
+    "${hex:2:2}" \
+    "${hex:4:2}"
+}
+
+# Return an explicit MAC if provided, otherwise generate one deterministically.
+resolve_mac() {
+  local explicit_mac="${1:-}"
+  local seed="$2"
+
+  if [ -n "$explicit_mac" ]; then
+    printf '%s\n' "$explicit_mac"
+  else
+    generate_mac "$seed"
+  fi
+}
+
 "$BUILD_SCRIPT" "$NAME"
 
 if sudo virsh dominfo "$NAME" >/dev/null 2>&1; then
@@ -64,25 +90,39 @@ sudo qemu-img create \
   "$RUN_IMAGE" \
   >/dev/null
 
+# Resize only the overlay disk, never the base image. Re-runs stay safe because
+# this script recreates the overlay from scratch before applying any expansion.
+if [ -n "${VM_DISK_ADD:-}" ]; then
+  sudo qemu-img resize "$RUN_IMAGE" "+${VM_DISK_ADD}G" >/dev/null
+fi
+
 NET_ARGS=()
 
 case "$VM_NET_MODE" in
   libvirt)
+    VM_MAC="$(resolve_mac "${VM_MAC_ADDR:-}" "$NAME")"
     NET_ARGS+=(
-      --network "network=${VM_NETWORK},model=virtio"
+      --network "network=${VM_NETWORK},model=virtio,mac=${VM_MAC}"
     )
     ;;
   macvtap)
     : "${VM_NET_IFACE:?missing VM_NET_IFACE for macvtap}"
+    VM_MAC="$(resolve_mac "${VM_MAC_ADDR:-}" "$NAME")"
     NET_ARGS+=(
-      --network "type=direct,source=${VM_NET_IFACE},source_mode=bridge,model=virtio"
+      --network "type=direct,source=${VM_NET_IFACE},source_mode=bridge,model=virtio,mac=${VM_MAC}"
     )
     ;;
   dual)
     : "${VM_NET_IFACE:?missing VM_NET_IFACE for dual mode}"
+
+    # Dual mode intentionally ignores VM_MAC_ADDR. Each NIC gets its own stable
+    # MAC, using distinct seeds so the two interfaces cannot collide.
+    VM_MAC_VTAP="$(resolve_mac "${VM_MAC_ADDR_VTAP:-}" "${NAME}vtap")"
+    VM_MAC_INTERNAL="$(resolve_mac "${VM_MAC_ADDR_INTERNAL:-}" "${NAME}internal")"
+
     NET_ARGS+=(
-      --network "type=direct,source=${VM_NET_IFACE},source_mode=bridge,model=virtio"
-      --network "network=${VM_NETWORK},model=virtio"
+      --network "type=direct,source=${VM_NET_IFACE},source_mode=bridge,model=virtio,mac=${VM_MAC_VTAP}"
+      --network "network=${VM_NETWORK},model=virtio,mac=${VM_MAC_INTERNAL}"
     )
     ;;
   *)
@@ -105,4 +145,3 @@ sudo virt-install \
   "${NET_ARGS[@]}"
 
 sudo virsh console "$NAME"
-
