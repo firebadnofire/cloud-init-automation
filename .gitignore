@@ -1,1 +1,32 @@
-logs/
+# Ignore everything
+*
+
+# Allow directories (so Git can traverse them)
+!*/
+
+# --- Root files ---
+!bring-down.sh
+!bring-up.sh
+!build.sh
+!copy-log.sh
+!update.sh
+
+!image-info.conf
+!LICENSE.md
+!README.md
+
+# --- README assets ---
+!cache.png
+
+# --- test fixtures ---
+!test/
+!test/meta-data
+!test/user-data
+!test/include/
+!test/include/*.sh
+
+!test-cached/
+!test-cached/meta-data
+!test-cached/user-data
+!test-cached/include/
+!test-cached/include/*.sh
