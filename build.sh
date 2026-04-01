@@ -39,8 +39,8 @@ XORRISO_ARGS=(
   -output "$OUT_ISO"
   -volid cidata
   -joliet -rock
-  "$SRC_DIR/user-data"
-  "$SRC_DIR/meta-data"
+  -graft-points
+  /="$SRC_DIR"
 )
 
 if [ -d "$SRC_DIR/include" ]; then
