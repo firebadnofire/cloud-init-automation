@@ -1,9 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ $# -ne 1 ]; then
-  echo "usage: $0 <name>" >&2
+NO_CONSOLE=0
+
+usage() {
+  echo "usage: $0 [-n|--no-console] <name>" >&2
   exit 1
+}
+
+# Parse args
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n|--no-console)
+      NO_CONSOLE=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      ;;
+    -* )
+      echo "error: unknown option $1" >&2
+      usage
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ $# -ne 1 ]; then
+  usage
 fi
 
 NAME="$1"
@@ -90,8 +116,7 @@ sudo qemu-img create \
   "$RUN_IMAGE" \
   >/dev/null
 
-# Resize only the overlay disk, never the base image. Re-runs stay safe because
-# this script recreates the overlay from scratch before applying any expansion.
+# Resize only the overlay disk, never the base image.
 if [ -n "${VM_DISK_ADD:-}" ]; then
   sudo qemu-img resize "$RUN_IMAGE" "+${VM_DISK_ADD}G" >/dev/null
 fi
@@ -115,8 +140,6 @@ case "$VM_NET_MODE" in
   dual)
     : "${VM_NET_IFACE:?missing VM_NET_IFACE for dual mode}"
 
-    # Dual mode intentionally ignores VM_MAC_ADDR. Each NIC gets its own stable
-    # MAC, using distinct seeds so the two interfaces cannot collide.
     VM_MAC_VTAP="$(resolve_mac "${VM_MAC_ADDR_VTAP:-}" "${NAME}vtap")"
     VM_MAC_INTERNAL="$(resolve_mac "${VM_MAC_ADDR_INTERNAL:-}" "${NAME}internal")"
 
@@ -144,4 +167,8 @@ sudo virt-install \
   --noautoconsole \
   "${NET_ARGS[@]}"
 
-sudo virsh console "$NAME"
+if [ "$NO_CONSOLE" -eq 0 ]; then
+  sudo virsh console "$NAME"
+else
+  echo "VM '$NAME' started (no console attached)"
+fi
