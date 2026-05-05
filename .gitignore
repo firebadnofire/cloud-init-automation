@@ -10,6 +10,8 @@
 !build.sh
 !copy-log.sh
 !update.sh
+!AGENTS.md
+!*.md
 
 !image-info.conf
 !LICENSE.md
