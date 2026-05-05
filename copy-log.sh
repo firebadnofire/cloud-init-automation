@@ -6,7 +6,17 @@ if [ $# -lt 1 ] || [ $# -gt 2 ]; then
   exit 1
 fi
 
-NAME="$1"
+RAW_NAME="$1"
+
+# Normalize name: strip leading ./, trailing /, and any path components
+NAME="$(basename -- "$RAW_NAME")"
+NAME="${NAME#./}"
+NAME="${NAME%/}"
+
+if [ "$RAW_NAME" != "$NAME" ]; then
+  echo "warning: normalized VM name '$RAW_NAME' -> '$NAME'"
+fi
+
 GUEST_PATH="${2:-}"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

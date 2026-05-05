@@ -32,7 +32,12 @@ if [ $# -ne 1 ]; then
   usage
 fi
 
-NAME="$1"
+RAW_NAME="$1"
+
+# Normalize name: strip leading ./, trailing /, and any path components
+NAME="$(basename -- "$RAW_NAME")"
+NAME="${NAME#./}"
+NAME="${NAME%/}"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONF_FILE="$SCRIPT_DIR/image-info.conf"

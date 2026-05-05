@@ -6,7 +6,16 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
-NAME="$1"
+RAW_NAME="$1"
+
+# Normalize name: strip leading ./, trailing /, and any path components
+NAME="$(basename -- "$RAW_NAME")"
+NAME="${NAME#./}"
+NAME="${NAME%/}"
+
+if [ "$RAW_NAME" != "$NAME" ]; then
+  echo "warning: normalized VM name '$RAW_NAME' -> '$NAME'"
+fi
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONF_FILE="$SCRIPT_DIR/image-info.conf"
@@ -43,4 +52,3 @@ if [ -f "$CI_ISO" ]; then
 fi
 
 echo "bring-down complete for '$NAME'"
-
